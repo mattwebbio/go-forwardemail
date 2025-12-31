@@ -1,4 +1,4 @@
-module github.com/abagayev/go-forwardemail
+module github.com/mattwebbio/go-forwardemail
 
 go 1.21
 
