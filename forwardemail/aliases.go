@@ -10,19 +10,41 @@ import (
 	"time"
 )
 
+type AccountOrID struct {
+	Account *Account
+	ID      string
+}
+
+func (a *AccountOrID) UnmarshalJSON(data []byte) error {
+	var s string
+	if err := json.Unmarshal(data, &s); err == nil {
+		a.ID = s
+		return nil
+	}
+
+	var acc Account
+	if err := json.Unmarshal(data, &acc); err == nil {
+		a.Account = &acc
+		a.ID = acc.Id
+		return nil
+	}
+
+	return fmt.Errorf("cannot unmarshal user field: %s", string(data))
+}
+
 type Alias struct {
-	Account                  Account   `json:"user"`
-	Domain                   Domain    `json:"domain"`
-	Name                     string    `json:"name"`
-	Description              string    `json:"description"`
-	Labels                   []string  `json:"labels"`
-	IsEnabled                bool      `json:"is_enabled"`
-	HasRecipientVerification bool      `json:"has_recipient_verification"`
-	Recipients               []string  `json:"recipients"`
-	Id                       string    `json:"id"`
-	Object                   string    `json:"object"`
-	CreatedAt                time.Time `json:"created_at"`
-	UpdatedAt                time.Time `json:"updated_at"`
+	User                     AccountOrID `json:"user"`
+	Domain                   Domain      `json:"domain"`
+	Name                     string      `json:"name"`
+	Description              string      `json:"description"`
+	Labels                   []string    `json:"labels"`
+	IsEnabled                bool        `json:"is_enabled"`
+	HasRecipientVerification bool        `json:"has_recipient_verification"`
+	Recipients               []string    `json:"recipients"`
+	Id                       string      `json:"id"`
+	Object                   string      `json:"object"`
+	CreatedAt                time.Time   `json:"created_at"`
+	UpdatedAt                time.Time   `json:"updated_at"`
 }
 
 type AliasParameters struct {
