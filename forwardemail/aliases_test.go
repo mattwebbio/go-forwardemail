@@ -474,3 +474,81 @@ func TestClient_DeleteAlias(t *testing.T) {
 func pointSliceOfStrings(s []string) *[]string {
 	return &s
 }
+
+func pointString(s string) *string {
+	return &s
+}
+
+func TestClient_GenerateAliasPassword(t *testing.T) {
+	type request struct {
+		domain string
+		alias  string
+		params GeneratePasswordParameters
+	}
+
+	tests := []struct {
+		name string
+		req  request
+		res  string
+		want *GeneratedPassword
+	}{
+		{
+			name: "no data",
+		},
+		{
+			name: "ok",
+			req: request{
+				domain: "stark.com",
+				alias:  "tony",
+				params: GeneratePasswordParameters{
+					IsOverride: pointBool(true),
+				},
+			},
+			res: `{
+				"username": "tony@stark.com",
+				"password": "hKJO_0vJSy!L0Bzm,Hj0"
+			}`,
+			want: &GeneratedPassword{
+				Username: "tony@stark.com",
+				Password: "hKJO_0vJSy!L0Bzm,Hj0",
+			},
+		},
+		{
+			name: "with custom password",
+			req: request{
+				domain: "stark.com",
+				alias:  "tony",
+				params: GeneratePasswordParameters{
+					NewPassword: pointString("my-custom-password"),
+					IsOverride:  pointBool(true),
+				},
+			},
+			res: `{
+				"username": "tony@stark.com",
+				"password": "my-custom-password"
+			}`,
+			want: &GeneratedPassword{
+				Username: "tony@stark.com",
+				Password: "my-custom-password",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				fmt.Fprintf(w, tt.res)
+			}))
+			defer svr.Close()
+
+			c := NewClient(ClientOptions{
+				ApiUrl: svr.URL,
+			})
+
+			got, _ := c.GenerateAliasPassword(tt.req.domain, tt.req.alias, tt.req.params)
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Fatalf("values are not the same %s", diff)
+			}
+		})
+	}
+}

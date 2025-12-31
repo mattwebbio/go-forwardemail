@@ -31,6 +31,18 @@ type AliasParameters struct {
 	IsEnabled                *bool
 }
 
+type GeneratePasswordParameters struct {
+	NewPassword         *string
+	Password            *string
+	IsOverride          *bool
+	EmailedInstructions *string
+}
+
+type GeneratedPassword struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
 func (c *Client) GetAliases(domain string) ([]Alias, error) {
 	req, err := c.newRequest("GET", fmt.Sprintf("/v1/domains/%s/aliases", domain))
 	if err != nil {
@@ -179,4 +191,43 @@ func (c *Client) DeleteAlias(domain string, alias string) error {
 	}
 
 	return nil
+}
+
+func (c *Client) GenerateAliasPassword(domain string, alias string, parameters GeneratePasswordParameters) (*GeneratedPassword, error) {
+	req, err := c.newRequest("POST", fmt.Sprintf("/v1/domains/%s/aliases/%s/generate-password", domain, alias))
+	if err != nil {
+		return nil, err
+	}
+
+	params := url.Values{}
+
+	if parameters.NewPassword != nil {
+		params.Add("new_password", *parameters.NewPassword)
+	}
+	if parameters.Password != nil {
+		params.Add("password", *parameters.Password)
+	}
+	if parameters.IsOverride != nil {
+		params.Add("is_override", strconv.FormatBool(*parameters.IsOverride))
+	}
+	if parameters.EmailedInstructions != nil {
+		params.Add("emailed_instructions", *parameters.EmailedInstructions)
+	}
+
+	req.Body = io.NopCloser(strings.NewReader(params.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	res, err := c.doRequest(req)
+	if err != nil {
+		return nil, err
+	}
+
+	var item GeneratedPassword
+
+	err = json.Unmarshal(res, &item)
+	if err != nil {
+		return nil, err
+	}
+
+	return &item, nil
 }
