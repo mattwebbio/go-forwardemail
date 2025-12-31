@@ -32,9 +32,31 @@ func (a *AccountOrID) UnmarshalJSON(data []byte) error {
 	return fmt.Errorf("cannot unmarshal user field: %s", string(data))
 }
 
+type DomainOrID struct {
+	Domain *Domain
+	ID     string
+}
+
+func (d *DomainOrID) UnmarshalJSON(data []byte) error {
+	var s string
+	if err := json.Unmarshal(data, &s); err == nil {
+		d.ID = s
+		return nil
+	}
+
+	var dom Domain
+	if err := json.Unmarshal(data, &dom); err == nil {
+		d.Domain = &dom
+		d.ID = dom.Id
+		return nil
+	}
+
+	return fmt.Errorf("cannot unmarshal domain field: %s", string(data))
+}
+
 type Alias struct {
 	User                     AccountOrID `json:"user"`
-	Domain                   Domain      `json:"domain"`
+	Domain                   DomainOrID  `json:"domain"`
 	Name                     string      `json:"name"`
 	Description              string      `json:"description"`
 	Labels                   []string    `json:"labels"`
